@@ -1,24 +1,21 @@
-from fastapi import FastAPI
 import os
 import sys
 
-# Create a minimal debug app
-app = FastAPI()
-
-@app.get("/")
-def debug_root():
-    return {
-        "status": "FastAPI is working",
-        "current_dir": os.getcwd(),
-        "files": os.listdir("."),
-        "python_path": sys.path[:5],  # First 5 entries only
-        "env_vars": dict(os.environ)
-    }
-
-@app.get("/debug")
-def debug_info():
-    return {
-        "message": "Debug endpoint working",
-        "cwd": os.getcwd(),
-        "listdir": os.listdir(".") if os.path.exists(".") else "no current dir"
-    }
+try:
+    from app.main import app
+    print("Successfully imported app from app.main")
+except ImportError as e:
+    print(f"Failed to import app.main: {e}")
+    # Fallback to debug app
+    from fastapi import FastAPI
+    app = FastAPI()
+    
+    @app.get("/")
+    def debug_root():
+        return {
+            "error": "Failed to import main app",
+            "message": str(e),
+            "current_dir": os.getcwd(),
+            "app_folder_exists": os.path.exists("app"),
+            "app_folder_contents": os.listdir("app") if os.path.exists("app") else "No app folder"
+        }
