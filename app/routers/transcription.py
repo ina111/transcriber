@@ -247,6 +247,11 @@ async def transcribe_youtube_url(
         Transcription results including raw, formatted, and summary text
     """
     try:
+        # Check if we're in Vercel environment and warn about limitations
+        if deployment_config.get("is_serverless") and deployment_config["environment"] == "vercel":
+            # In Vercel, YouTube processing may have limitations
+            logger.warning("YouTube processing in Vercel environment may have limitations")
+        
         # Validate YouTube URL
         if not any(domain in youtube_url for domain in ['youtube.com', 'youtu.be']):
             raise HTTPException(
@@ -256,9 +261,40 @@ async def transcribe_youtube_url(
         
         logger.info(f"Processing YouTube URL: {youtube_url}")
         
-        # Process the YouTube URL
-        audio_path, input_type = audio_processor.process_input(youtube_url)
-        audio_segments = audio_processor.split_audio_if_needed(audio_path)
+        try:
+            # Process the YouTube URL
+            audio_path, input_type = audio_processor.process_input(youtube_url)
+            
+        except ProcessingError as e:
+            logger.error(f"YouTube processing error: {str(e)}")
+            error_message = str(e)
+            
+            # Provide more specific error messages for common issues
+            if "yt-dlp" in error_message.lower():
+                error_message = "YouTube download failed. This may be due to video restrictions or temporary server issues."
+            elif "network" in error_message.lower() or "connection" in error_message.lower():
+                error_message = "Network connection error while downloading YouTube video."
+            elif "ffmpeg" in error_message.lower():
+                error_message = "Audio processing error. This video format may not be supported in the current environment."
+            
+            raise HTTPException(status_code=422, detail=error_message)
+            
+        except Exception as e:
+            logger.error(f"Unexpected error during YouTube processing: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail="Failed to download YouTube video. Please check the URL and try again."
+            )
+        
+        # Split audio if needed
+        try:
+            audio_segments = audio_processor.split_audio_if_needed(audio_path)
+        except Exception as e:
+            logger.error(f"Audio splitting error: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to process downloaded audio. The video may be too long or in an unsupported format."
+            )
         
         # Transcribe audio segments
         result = await process_transcription(
@@ -291,9 +327,16 @@ async def transcribe_youtube_url(
             "base_filename": base_filename
         }
         
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
+        
     except Exception as e:
-        logger.error(f"Error processing YouTube URL: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Unexpected error processing YouTube URL: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Server error while processing YouTube video: {str(e)}"
+        )
 
 def safe_cleanup_file(file_path: str):
     """Safely clean up a single file."""
