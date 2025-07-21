@@ -9,6 +9,7 @@ from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from starlette.requests import Request
 import os
+from pathlib import Path
 
 from app.routers import transcription
 
@@ -19,8 +20,9 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# Setup Jinja2 templates
-templates = Jinja2Templates(directory="app/templates")
+# Setup Jinja2 templates with absolute path
+BASE_DIR = Path(__file__).resolve().parent.parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "app" / "templates"))
 
 # Include routers
 app.include_router(transcription.router, prefix="/api", tags=["transcription"])
@@ -28,7 +30,10 @@ app.include_router(transcription.router, prefix="/api", tags=["transcription"])
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     """Render the main page with upload forms."""
-    return templates.TemplateResponse("index.html", {"request": request})
+    try:
+        return templates.TemplateResponse("index.html", {"request": request})
+    except Exception as e:
+        return HTMLResponse(f"<h1>Service Starting...</h1><p>Error: {str(e)}</p>", status_code=500)
 
 @app.get("/health")
 async def health_check():
