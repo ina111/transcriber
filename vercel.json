@@ -1,13 +1,7 @@
 {
   "functions": {
     "api/index.py": {
-      "runtime": "@vercel/python",
       "maxDuration": 300
     }
-  },
-  "env": {
-    "VERCEL_ENV": "production",
-    "TEMP_DIR": "/tmp",
-    "OUTPUT_DIR": "/tmp"
   }
 }
