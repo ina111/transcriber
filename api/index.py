@@ -1,21 +1,24 @@
-import traceback
-import sys
+from fastapi import FastAPI
 import os
+import sys
 
-try:
-    from app.main import app
-except Exception as e:
-    # Create a simple debug app if main import fails
-    from fastapi import FastAPI
-    app = FastAPI()
-    
-    @app.get("/")
-    def debug_root():
-        return {
-            "error": "Import failed",
-            "message": str(e),
-            "traceback": traceback.format_exc(),
-            "python_path": sys.path,
-            "current_dir": os.getcwd(),
-            "files": os.listdir(".")
-        }
+# Create a minimal debug app
+app = FastAPI()
+
+@app.get("/")
+def debug_root():
+    return {
+        "status": "FastAPI is working",
+        "current_dir": os.getcwd(),
+        "files": os.listdir("."),
+        "python_path": sys.path[:5],  # First 5 entries only
+        "env_vars": dict(os.environ)
+    }
+
+@app.get("/debug")
+def debug_info():
+    return {
+        "message": "Debug endpoint working",
+        "cwd": os.getcwd(),
+        "listdir": os.listdir(".") if os.path.exists(".") else "no current dir"
+    }
