@@ -93,22 +93,22 @@ TEMP_DIR=./temp
 
 ```bash
 # 音声ファイルを書き起こし
-uv run transcriber.main:main "audio.mp3"
+uv run transcriber "audio.mp3"
 
 # YouTube動画を書き起こし
-uv run transcriber.main:main "https://youtu.be/VIDEO_ID"
+uv run transcriber "https://youtu.be/VIDEO_ID"
 
 # 出力ディレクトリを指定
-uv run transcriber.main:main "audio.mp3" --output-dir ./results
+uv run transcriber "audio.mp3" --output-dir ./results
 
 # 詳細ログを表示
-uv run transcriber.main:main "audio.mp3" --verbose
+uv run transcriber "audio.mp3" --verbose
 ```
 
 #### オプション
 
 ```bash
-uv run transcriber.main:main --help
+uv run transcriber --help
 ```
 
 | オプション | 説明 |
