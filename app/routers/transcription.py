@@ -247,10 +247,17 @@ async def transcribe_youtube_url(
         Transcription results including raw, formatted, and summary text
     """
     try:
-        # Check if we're in Vercel environment and warn about limitations
-        if deployment_config.get("is_serverless") and deployment_config["environment"] == "vercel":
-            # In Vercel, YouTube processing may have limitations
-            logger.warning("YouTube processing in Vercel environment may have limitations")
+        # Check system capabilities first
+        import shutil
+        ffmpeg_available = shutil.which("ffmpeg") is not None
+        
+        # If in Vercel environment and ffmpeg is not available, provide alternative
+        if deployment_config.get("is_serverless") and not ffmpeg_available:
+            logger.error("YouTube processing not available in current environment: ffmpeg not found")
+            raise HTTPException(
+                status_code=422,
+                detail="YouTube処理は現在のサーバー環境ではサポートされていません。\n\n代替手段:\n1. YouTube動画の音声を手動でMP3ファイルとしてダウンロード\n2. ダウンロードしたMP3ファイルを「音声ファイル」タブからアップロード\n\n推奨ツール: y2mate.com, youtube-dl, または類似のYouTube音声ダウンロードサービス"
+            )
         
         # Validate YouTube URL
         if not any(domain in youtube_url for domain in ['youtube.com', 'youtu.be']):
@@ -424,4 +431,53 @@ async def health_check():
         "is_serverless": deployment_config["is_serverless"],
         "max_file_size_mb": deployment_config["max_file_size"] / 1024 / 1024,
         "temp_dir": deployment_config["temp_dir"]
+    }
+
+@router.get("/debug/system")
+async def debug_system():
+    """Debug system capabilities for YouTube processing."""
+    import subprocess
+    import shutil
+    
+    # Check ffmpeg availability
+    ffmpeg_available = shutil.which("ffmpeg") is not None
+    ffmpeg_path = shutil.which("ffmpeg") if ffmpeg_available else "Not found"
+    
+    # Check yt-dlp functionality
+    yt_dlp_working = False
+    yt_dlp_error = ""
+    try:
+        import yt_dlp
+        # Test with a simple YouTube URL (just info extraction, no download)
+        test_url = "https://www.youtube.com/watch?v=jNQXAC9IVRw"  # Famous test video
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+        }
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(test_url, download=False)
+            if info and info.get('title'):
+                yt_dlp_working = True
+    except Exception as e:
+        yt_dlp_error = str(e)
+    
+    return {
+        "environment": {
+            "is_vercel": os.getenv("VERCEL") == "1",
+            "current_dir": os.getcwd(),
+            "temp_dir": deployment_config["temp_dir"]
+        },
+        "ffmpeg": {
+            "available": ffmpeg_available,
+            "path": ffmpeg_path
+        },
+        "yt_dlp": {
+            "working": yt_dlp_working,
+            "error": yt_dlp_error if not yt_dlp_working else None
+        },
+        "capabilities": {
+            "youtube_processing": yt_dlp_working and ffmpeg_available,
+            "audio_file_processing": True,
+            "recommended_approach": "audio_file_only" if not (yt_dlp_working and ffmpeg_available) else "full_support"
+        }
     }
