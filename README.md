@@ -1,6 +1,6 @@
 # Transcriber
 
-音声ファイルやYouTube動画から音声を書き起こすCLIツール。Google Gemini APIを使用して高精度な音声認識・整形・要約を提供します。
+音声ファイルやYouTube動画から音声を書き起こすマルチインターフェースツール。Google Gemini APIを使用して高精度な音声認識・整形・要約を提供します。CLI・Web両方のインターフェースに対応。
 
 ## ✨ 主な機能
 
@@ -8,7 +8,9 @@
 - 🎬 **YouTube対応**: URLから直接音声を抽出・書き起こし
 - 📝 **3種類の出力**: 生テキスト・整形済み・要約
 - ⚡ **長時間音声対応**: 30分以上の音声を自動分割・並列処理
-- 🎨 **進捗表示**: 美しいプログレスバーで処理状況を可視化
+- 🎨 **進捗表示**: CLI・Web両方で美しいプログレスバーを表示
+- 🌐 **Web インターフェース**: ブラウザからの操作に対応
+- 📊 **コスト追跡**: API使用量と料金の詳細表示
 
 ## 🛠️ インストール
 
@@ -85,26 +87,28 @@ TEMP_DIR=./temp
 
 ## 🚀 使用方法
 
-### 基本的な使用法
+### CLI版
+
+#### 基本的な使用法
 
 ```bash
 # 音声ファイルを書き起こし
-uv run transcriber "audio.mp3"
+uv run transcriber.main:main "audio.mp3"
 
 # YouTube動画を書き起こし
-uv run transcriber "https://youtu.be/VIDEO_ID"
+uv run transcriber.main:main "https://youtu.be/VIDEO_ID"
 
 # 出力ディレクトリを指定
-uv run transcriber "audio.mp3" --output-dir ./results
+uv run transcriber.main:main "audio.mp3" --output-dir ./results
 
 # 詳細ログを表示
-uv run transcriber "audio.mp3" --verbose
+uv run transcriber.main:main "audio.mp3" --verbose
 ```
 
-### オプション
+#### オプション
 
 ```bash
-uv run transcriber --help
+uv run transcriber.main:main --help
 ```
 
 | オプション | 説明 |
@@ -113,6 +117,28 @@ uv run transcriber --help
 | `--format-only` | テキスト整形のみ実行 |
 | `--summarize-only` | 要約のみ実行 |
 | `--verbose` | 詳細ログを表示 |
+
+### Web版
+
+#### ローカル起動
+
+```bash
+# Web サーバーを起動
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# または簡単起動
+uv run run_web.py
+```
+
+ブラウザで `http://localhost:8000` にアクセスして、Web インターフェースを利用できます。
+
+#### デプロイ (Vercel)
+
+1. Vercel にリポジトリを接続
+2. 環境変数 `GEMINI_API_KEY` を設定
+3. 自動デプロイが実行されます
+
+設定ファイル `vercel.json` により、自動的にサーバーレス関数として動作します。
 
 ### 出力ファイル
 
@@ -124,7 +150,6 @@ output/
 ├── input_name_formatted.txt # 整形済みテキスト
 └── input_name_summary.txt   # 要約テキスト
 ```
-
 
 ### プロンプトのカスタマイズ
 

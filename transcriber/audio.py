@@ -103,7 +103,7 @@ class AudioProcessor:
             # 一時ファイル名生成
             temp_file = self.temp_dir / f"youtube_audio_{int(time.time())}"
             
-            # yt-dlp設定（出力を抑制）
+            # yt-dlp設定（ボット対策強化）
             ydl_opts = {
                 'format': 'bestaudio/best',
                 'outtmpl': str(temp_file) + '.%(ext)s',
@@ -111,6 +111,29 @@ class AudioProcessor:
                 'extract_flat': False,
                 'quiet': True,  # yt-dlpの出力を抑制
                 'no_warnings': True,
+                # ボット対策の設定
+                'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'referer': 'https://www.youtube.com/',
+                'headers': {
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-us,en;q=0.5',
+                    'Accept-Encoding': 'gzip, deflate',
+                    'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.7',
+                    'Keep-Alive': '300',
+                    'Connection': 'keep-alive',
+                },
+                # 追加の回避設定
+                'extractor_args': {
+                    'youtube': {
+                        'skip': ['dash', 'hls'],
+                        'player_skip': ['configs'],
+                    }
+                },
+                'sleep_interval': 1,  # リクエスト間隔
+                'max_sleep_interval': 5,
+                # より詳細な設定
+                'socket_timeout': 30,
+                'retries': 3,
             }
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
@@ -160,8 +183,21 @@ class AudioProcessor:
                 return mp3_file
                 
         except Exception as e:
-            logger.error(f"YouTube音声ダウンロードエラー: {e}")
-            raise ProcessingError(f"YouTube音声ダウンロードに失敗しました: {e}")
+            error_str = str(e)
+            logger.error(f"YouTube音声ダウンロードエラー: {error_str}")
+            
+            # ボット検出の場合の特別なメッセージ
+            if "Sign in to confirm you're not a bot" in error_str:
+                raise ProcessingError(
+                    "YouTubeがボット検出を行っています。しばらく時間をおいてから再試行するか、"
+                    "別の動画URLをお試しください。一般公開されている動画をご利用ください。"
+                )
+            elif "Private video" in error_str:
+                raise ProcessingError("プライベート動画はアクセスできません。一般公開されている動画をお試しください。")
+            elif "This video is unavailable" in error_str:
+                raise ProcessingError("この動画は利用できません。URLを確認するか、別の動画をお試しください。")
+            else:
+                raise ProcessingError(f"YouTube音声ダウンロードに失敗しました: {error_str}")
     
     def convert_audio_format(self, input_path: str) -> str:
         """音声形式変換（MP3への統一）"""

@@ -1,0 +1,19 @@
+# Web framework dependencies
+fastapi==0.111.0
+uvicorn[standard]==0.30.1
+python-multipart==0.0.9
+jinja2==3.1.4
+websockets==15.0.1
+
+# Existing transcriber dependencies
+google-generativeai==0.8.3
+yt-dlp>=2024.12.13
+pydub==0.25.1
+click==8.1.7
+python-dotenv==1.0.1
+
+# Audio processing
+ffmpeg-python==0.2.0
+
+# CLI enhancement
+rich>=14.0.0

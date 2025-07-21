@@ -1,0 +1,56 @@
+# Local development files
+.env
+.env.local
+.env.*.local
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Output directories
+output/
+temp/
+.temp/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git files
+.git/
+.gitignore
+
+# Testing
+tests/
+test_*
+*_test.py
+pytest.ini
+.pytest_cache/
+
+# Documentation (optional - comment out if you want to include)
+README.md
+CLAUDE.md
+DEPLOYMENT.md
+TODO.md
+
+# Log files
+*.log
+logs/
+
+# Jupyter notebooks
+*.ipynb
+.ipynb_checkpoints/
+
+# Local scripts
+run_*.py
+test_*.py
