@@ -65,14 +65,22 @@ def load_config() -> Dict[str, Any]:
     """環境変数から設定を読み込み"""
     load_dotenv()
     
+    # Vercel環境の検出
+    is_vercel = os.getenv("VERCEL") == "1"
+    
+    # Vercel環境では/tmpを使用、ローカルでは相対パス
+    default_temp_dir = "/tmp" if is_vercel else "./temp"
+    default_output_dir = "/tmp" if is_vercel else "./output"
+    
     return {
         "gemini_api_key": os.getenv("GEMINI_API_KEY"),
         "gemini_model": os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
         "max_audio_duration": int(os.getenv("MAX_AUDIO_DURATION", "1800")),
         "retry_count": int(os.getenv("RETRY_COUNT", "5")),
         "retry_delay": int(os.getenv("RETRY_DELAY", "1")),
-        "output_dir": os.getenv("OUTPUT_DIR", "./output"),
-        "temp_dir": os.getenv("TEMP_DIR", "./temp"),
+        "output_dir": os.getenv("OUTPUT_DIR", default_output_dir),
+        "temp_dir": os.getenv("TEMP_DIR", default_temp_dir),
+        "is_vercel": is_vercel,
     }
 
 

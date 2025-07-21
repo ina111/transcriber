@@ -31,7 +31,16 @@ class AudioProcessor:
         """初期化"""
         self.config = load_config()
         self.temp_dir = Path(self.config["temp_dir"])
-        self.temp_dir.mkdir(exist_ok=True)
+        
+        # ディレクトリ作成（Vercel環境での読み取り専用エラーを回避）
+        try:
+            self.temp_dir.mkdir(exist_ok=True)
+        except OSError as e:
+            # Vercel環境では/tmpディレクトリは既に存在するため、作成不要
+            if not self.temp_dir.exists():
+                raise ProcessingError(f"一時ディレクトリの作成に失敗しました: {e}")
+            
+        self.is_vercel = self.config.get("is_vercel", False)
         
         # 対応音声形式
         self.supported_formats = {'.mp3', '.wav', '.m4a', '.aac', '.flac', '.ogg'}
