@@ -1,0 +1,21 @@
+[project]
+name = "transcriber"
+version = "0.1.0"
+description = "音声ファイルやYouTube動画から音声を書き起こすCLIツール"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "google-generativeai",
+    "yt-dlp",
+    "pydub==0.25.1",
+    "click",
+    "python-dotenv",
+    "rich>=14.0.0",
+]
+
+[project.scripts]
+transcriber = "transcriber.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
