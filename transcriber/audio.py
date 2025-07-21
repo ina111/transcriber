@@ -147,7 +147,20 @@ class AudioProcessor:
             
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 # 最初に情報のみ取得
-                info = ydl.extract_info(url, download=False)
+                try:
+                    info = ydl.extract_info(url, download=False)
+                except yt_dlp.utils.ExtractorError as e:
+                    error_msg = str(e)
+                    if "Video unavailable" in error_msg:
+                        raise ProcessingError("動画が利用できません。プライベート動画、削除された動画、または地域制限がある可能性があります。")
+                    elif "Sign in to confirm your age" in error_msg:
+                        raise ProcessingError("年齢制限のある動画です。このサービスでは処理できません。")
+                    elif "Private video" in error_msg:
+                        raise ProcessingError("プライベート動画です。公開動画のURLを使用してください。")
+                    else:
+                        raise ProcessingError(f"YouTube動画情報の取得に失敗しました: {error_msg}")
+                except Exception as e:
+                    raise ProcessingError(f"YouTube処理中にエラーが発生しました: {str(e)}")
                 
                 # 動画情報を保存
                 title = info.get('title', 'Unknown Title')
