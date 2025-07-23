@@ -31,7 +31,6 @@ router = APIRouter()
 config = load_config()
 deployment_config = get_deployment_config()
 ensure_directories()  # Ensure required directories exist
-audio_processor = AudioProcessor()
 
 def load_prompt(name: str) -> str:
     """Load prompt from file."""
@@ -193,6 +192,9 @@ async def transcribe_audio_file(
         
         logger.info(f"Processing uploaded file: {audio_file.filename}")
         
+        # Create a new AudioProcessor instance for this request
+        audio_processor = AudioProcessor()
+        
         # Process the audio file
         audio_path, input_type = audio_processor.process_input(temp_file_path)
         audio_segments = audio_processor.split_audio_if_needed(audio_path)
@@ -205,8 +207,9 @@ async def transcribe_audio_file(
             api_key_override
         )
         
-        # Clean up temporary audio segments
+        # Clean up temporary audio segments and processor temp directory
         background_tasks.add_task(cleanup_temp_files, audio_segments)
+        background_tasks.add_task(audio_processor.cleanup_temp_files)
         
         # Generate base filename (without extension)
         base_filename = Path(audio_file.filename).stem
@@ -268,6 +271,9 @@ async def transcribe_youtube_url(
         
         logger.info(f"Processing YouTube URL: {youtube_url}")
         
+        # Create a new AudioProcessor instance for this request
+        audio_processor = AudioProcessor()
+        
         try:
             # Process the YouTube URL
             audio_path, input_type = audio_processor.process_input(youtube_url)
@@ -311,8 +317,9 @@ async def transcribe_youtube_url(
             api_key_override
         )
         
-        # Clean up temporary audio segments
+        # Clean up temporary audio segments and processor temp directory
         background_tasks.add_task(cleanup_temp_files, audio_segments)
+        background_tasks.add_task(audio_processor.cleanup_temp_files)
         
         # Generate base filename for YouTube videos
         # Extract from audio_processor's stored info

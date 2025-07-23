@@ -4,6 +4,7 @@ import os
 import logging
 import tempfile
 import shutil
+import uuid
 from pathlib import Path
 from typing import List, Tuple
 from urllib.parse import urlparse
@@ -30,11 +31,14 @@ class AudioProcessor:
     def __init__(self):
         """初期化"""
         self.config = load_config()
-        self.temp_dir = Path(self.config["temp_dir"])
+        # プロセス固有の一時ディレクトリを作成
+        base_temp_dir = Path(self.config["temp_dir"])
+        self.session_id = str(uuid.uuid4())[:8]
+        self.temp_dir = base_temp_dir / f"transcriber_{self.session_id}"
         
         # ディレクトリ作成（Vercel環境での読み取り専用エラーを回避）
         try:
-            self.temp_dir.mkdir(exist_ok=True)
+            self.temp_dir.mkdir(parents=True, exist_ok=True)
         except OSError as e:
             # Vercel環境では/tmpディレクトリは既に存在するため、作成不要
             if not self.temp_dir.exists():
@@ -446,14 +450,14 @@ class AudioProcessor:
             return "audio_file"
     
     def cleanup_temp_files(self) -> None:
-        """一時ファイル削除"""
-        logger.info("一時ファイル削除開始")
+        """このプロセス専用の一時ファイル削除"""
+        logger.info(f"一時ファイル削除開始 (session: {self.session_id})")
         try:
             if self.temp_dir.exists():
                 shutil.rmtree(self.temp_dir)
-                logger.info("一時ファイル削除完了")
+                logger.info(f"一時ファイル削除完了 (session: {self.session_id})")
         except Exception as e:
-            logger.warning(f"一時ファイル削除エラー: {e}")
+            logger.warning(f"一時ファイル削除エラー (session: {self.session_id}): {e}")
 
 
 # 必要なimportを追加

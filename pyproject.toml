@@ -21,6 +21,7 @@ dependencies = [
     
     # Audio processing
     "ffmpeg-python==0.2.0",
+    "audioop-lts; python_version >= '3.13'",  # Required for pydub on Python 3.13+
     
     # CLI enhancement
     "rich>=14.0.0",
