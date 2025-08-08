@@ -289,8 +289,9 @@
         });
 
         function isValidYoutubeUrl(url) {
-            const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)[\w-]+/;
-            return pattern.test(url);
+            // Accept common YouTube URL patterns: watch, youtu.be, embed, live, shorts
+            const pattern = /^(https?:\/\/)?((www|m)\.)?(youtube\.com\/(watch\?v=|embed\/|live\/|shorts\/)|youtu\.be\/)[\w-]+(\S*)?$/i;
+            return pattern.test(url.trim());
         }
 
         // Form submission handling
