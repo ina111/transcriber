@@ -135,10 +135,9 @@ class AudioProcessor:
                     'Keep-Alive': '300',
                     'Connection': 'keep-alive',
                 },
-                # 追加の回避設定
+                # 追加の回避設定（ライブ配信対応のためHLSはスキップしない）
                 'extractor_args': {
                     'youtube': {
-                        'skip': ['dash', 'hls'],
                         'player_skip': ['configs'],
                     }
                 },
@@ -185,21 +184,41 @@ class AudioProcessor:
                 console.print("[cyan]⬇️  音声をダウンロード中...[/cyan]")
                 
                 # 実際のダウンロード実行
-                ydl.download([url])
+                try:
+                    ydl.download([url])
+                except yt_dlp.DownloadError as de:
+                    raise ProcessingError(f"yt-dlpのダウンロードに失敗しました: {de}")
                 
-                # ダウンロードされたファイル名を特定
+                # ダウンロードされたファイル名を特定（拡張子を広く許容）
                 downloaded_file = None
-                for ext in ['webm', 'm4a', 'mp3', 'wav']:
+                # 優先度順に拡張子をチェック（音声コンテナ優先）
+                preferred_exts = [
+                    'm4a', 'webm', 'mp3', 'wav', 'mp4', 'aac', 'ogg', 'opus', 'mkv', 'ts'
+                ]
+                for ext in preferred_exts:
                     potential_file = temp_file.with_suffix(f'.{ext}')
                     if potential_file.exists():
                         downloaded_file = potential_file
                         break
                 
+                # パターンに一致しない場合は、ベース名に一致する全てのファイルから最大サイズを選択
                 if not downloaded_file:
-                    raise ProcessingError("ダウンロードされたファイルが見つかりません")
+                    candidates = sorted(self.temp_dir.glob(temp_file.name + ".*"), key=lambda p: p.stat().st_size if p.exists() else 0, reverse=True)
+                    downloaded_file = candidates[0] if candidates else None
+                
+                if not downloaded_file:
+                    # デバッグ用にディレクトリの内容を提示
+                    existing = ', '.join(p.name for p in self.temp_dir.glob('*')) or '(なし)'
+                    raise ProcessingError(
+                        "YouTube音声のダウンロードは完了しましたが、出力ファイルを検出できません。\n"
+                        f"検索ベース: {temp_file.name}.*, 保存先: {self.temp_dir}\n"
+                        f"ディレクトリ内のファイル: {existing}"
+                    )
                 
                 # MP3に変換
+                console.print(f"[green]📦 ダウンロード済み:[/green] {downloaded_file.name}")
                 mp3_file = self.convert_audio_format(str(downloaded_file))
+                console.print(f"[green]🎧  変換後ファイル:[/green] {Path(mp3_file).name}")
                 
                 # 元ファイル削除
                 if downloaded_file.exists():

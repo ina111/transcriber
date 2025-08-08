@@ -71,6 +71,12 @@ class GeminiClient:
         logger.info(f"音声書き起こし開始: {audio_path}")
         
         try:
+            # 事前検証: ファイルの存在とサイズ
+            p = Path(audio_path)
+            if not p.exists() or not p.is_file():
+                raise APIError(f"音声ファイルが見つかりません: {audio_path}")
+            if p.stat().st_size == 0:
+                raise APIError(f"音声ファイルが空です: {audio_path}")
             # 音声ファイルをアップロード
             audio_file = genai.upload_file(path=audio_path)
             logger.debug(f"音声ファイルアップロード完了: {audio_file.name}")
